@@ -1,63 +1,72 @@
-const createStatsCollector = require("mocha/lib/stats-collector");
+const createStatsCollector = require("mocha/lib/stats-collector")
 
 // Your code here
-function createEmployeeRecord(arr) {
-    let record = [];
-    record.firstName = arr[0];
-    record.familyName = arr[1];
-    record.title = arr[2];
-    record.payPerHour = arr[3];
-    record.timeInEvents = [];
-    record.timeOutEvents = [];
-    return record;
+function createEmployeeRecord([firstName, familyName, title, payPerHour]) {
+	return {
+		firstName,
+		familyName,
+		title,
+		payPerHour,
+		timeInEvents: [],
+		timeOutEvents: [],
+	}
 }
 
 function createEmployeeRecords(arr) {
-    let records = [];
-    for (const data of arr) {
-        records.push(createEmployeeRecord(data));
-    }
-    return records;
+	let records = []
+	for (const data of arr) {
+		records.push(createEmployeeRecord(data))
+	}
+	return records
 }
 
-function createTimeInEvent(employeeRec, clockIn) {
-    employeeRec.timeInEvents.push({ type: "TimeIn" });
-    const timeIn = employeeRec.timeInEvents[0];
-    const timeInDate = clockIn.split(" ")[0];
-    const timeInHour = parseInt(clockIn.split(" ")[1]);
-    timeIn.date = timeInDate;
-    timeIn.hour = timeInHour;
-    return employeeRec;
+function createTimeInEvent(record, dateTime) {
+	const timeObj = {
+		type: "TimeIn",
+		date: dateTime.split(" ")[0],
+		hour: parseInt(dateTime.slice(-4), 10),
+	}
+	record.timeInEvents.push(timeObj)
+	return record
 }
 
-function createTimeOutEvent(employeeRec, clockOut) {
-    employeeRec.timeOutEvents.push({ type: "TimeOut" });
-    const timeOut = employeeRec.timeOutEvents[0];
-    const timeOutDate = clockOut.split(" ")[0];
-    const timeOutHour = parseInt(clockOut.split(" ")[1]);
-    timeOut.date = timeOutDate;
-    timeOut.hour = timeOutHour;
-    return employeeRec;
+function createTimeOutEvent(record, dateTime) {
+	const timeObj = {
+		type: "TimeOut",
+		date: dateTime.split(" ")[0],
+		hour: parseInt(dateTime.slice(-4), 10),
+	}
+	record.timeOutEvents.push(timeObj)
+	return record
 }
 
 function hoursWorkedOnDate(employee, date) {
-    for (let i = 0; i < employee.timeInEvents.length; i++) {
-        if (employee.timeInEvents[i].date === date) {
-            const hoursWorked =
-                employee.timeOutEvents[i].hour - employee.timeInEvents[i].hour;
-            return hoursWorked / 100;
-        }
-    }
+	const timeIn = employee.timeInEvents.find((record) => {
+		return record.date === date
+	}).hour
+	const timeOut = employee.timeOutEvents.find((record) => {
+		return record.date === date
+	}).hour
+	return (timeOut - timeIn) / 100
 }
 
-function wagesEarnedOnDate(employee) {
-    for (const daysWorked of employee.timeInEvents) {
-        const hours = hoursWorkedOnDate(employee, daysWorked.date);
-        return hours * employee.payPerHour;
-    }
+function wagesEarnedOnDate(employee, date) {
+	const hours = hoursWorkedOnDate(employee, date)
+	return hours * employee.payPerHour
 }
 
 function allWagesFor(employee) {
-    let allWages = "";
-    console.log(wagesEarnedOnDate(employee));
+	let pay = 0
+	for (const daysWorked of employee.timeOutEvents) {
+		pay += wagesEarnedOnDate(employee, daysWorked.date)
+	}
+	return pay
+}
+
+function calculatePayroll(recordsArray) {
+	let pay = 0
+	for (const employee of recordsArray) {
+		pay += allWagesFor(employee)
+	}
+	return pay
 }
